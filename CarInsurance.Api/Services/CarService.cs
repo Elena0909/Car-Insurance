@@ -1,6 +1,7 @@
 using CarInsurance.Api.Data;
 using CarInsurance.Api.Dtos;
 using Microsoft.EntityFrameworkCore;
+using CarInsurance.Api.Models;
 
 namespace CarInsurance.Api.Services;
 
@@ -26,5 +27,43 @@ public class CarService(AppDbContext db)
             p.StartDate <= date &&
             p.EndDate >= date
         );
+    }
+
+    public async Task<InsuranceClaimDto> RegisterInsuranceClaims(long carId, DateOnly claimDate, string description, double amount)
+    {
+        var carExists = await _db.Cars.AnyAsync(c => c.Id == carId);
+        if (!carExists) throw new KeyNotFoundException($"Car {carId} not found");
+
+        var policyId = await _db.Policies
+     .Where(p => p.CarId == carId && p.StartDate <= claimDate && claimDate <= p.EndDate)
+     .Select(p => p.Id)
+     .FirstOrDefaultAsync();
+        if (policyId == 0) throw new KeyNotFoundException($"Not policy available for car {carId}");
+
+
+        InsuranceClaim insuranceClaim = new InsuranceClaim { CarId = carId, Amount = amount, ClaimDate = claimDate, Description = description, PolicyId = policyId };
+
+
+        _db.InsuranceClaims.Add(insuranceClaim);
+
+        await _db.SaveChangesAsync();
+        long a = insuranceClaim.Id;
+
+        return new InsuranceClaimDto(insuranceClaim.Id, claimDate.ToString(), description, amount);
+    }
+
+    public async Task<List<HistoryDto>> ListClaimsAsync(long carId)
+    {
+        return await _db.InsuranceClaims
+         .Where(c => c.CarId == carId)
+         .OrderBy(c => c.ClaimDate)
+         .Select(c => new HistoryDto(
+             c.Id,
+             c.ClaimDate.ToString("yyyy-MM-dd"),
+             c.Policy.StartDate.ToString("yyyy-MM-dd"),
+             c.Policy.EndDate.ToString("yyyy-MM-dd"),
+             c.Description,
+             c.Amount))
+         .ToListAsync();
     }
 }
