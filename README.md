@@ -55,7 +55,7 @@ curl "https://localhost:61341/api/cars/1/insurance-valid?date=2024-06-01"
 
 > Use __CarsController.http__ to send or debug requests:
 
-![alt text](img/image.png)
+![alt text](CarInsurance.Api/img/image.png)
 
 ---
 
