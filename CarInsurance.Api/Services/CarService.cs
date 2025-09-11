@@ -70,4 +70,12 @@ public class CarService(AppDbContext db)
              c.Amount))
          .ToListAsync();
     }
+
+    public async Task<List<PolicyExpirationLogDto>> ListExpirationLogs()
+    {
+        return await _db.Policies
+            .Where(p=>p.LoggedAt!=DateTime.MinValue)
+            .Select(p => new PolicyExpirationLogDto(p.Id, p.CarId, p.EndDate.ToString(), p.LoggedAt.ToString()))
+            .ToListAsync();
+    }
 }

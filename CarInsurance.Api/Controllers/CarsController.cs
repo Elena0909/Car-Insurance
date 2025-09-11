@@ -71,4 +71,8 @@ public class CarsController(CarService service) : ControllerBase
             return NotFound(e.Message);
         }
     }
+
+    [HttpGet("expiration-logs")]
+    public async Task<ActionResult<List<PolicyExpirationLogDto>>> GetExpirationLogs()
+        => Ok(await _service.ListExpirationLogs());
 }
