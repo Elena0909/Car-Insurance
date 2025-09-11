@@ -17,17 +17,25 @@ public class CarsController(CarService service) : ControllerBase
     [HttpGet("cars/{carId:long}/insurance-valid")]
     public async Task<ActionResult<InsuranceValidityResponse>> IsInsuranceValid(long carId, [FromQuery] string date)
     {
-        if (!DateOnly.TryParse(date, out var parsed))
+        if (!DateOnly.TryParse(date, out var parsedDate))
             return BadRequest("Invalid date format. Use YYYY-MM-DD.");
+
+        if (carId < 1)
+            return BadRequest("Invalid car id. Make sure it is greater than 0.");
+
+        //1885 - year of the first car invented
+        if (parsedDate.Month <= 0 || parsedDate.Month > 12 || parsedDate.Day <= 0 || parsedDate.Day > 31 || parsedDate.Year < 1885)
+            return BadRequest($"The specified date is invalid. Make sure it has the format YYYY-MM-DD and is a valid date.");
+
 
         try
         {
-            var valid = await _service.IsInsuranceValidAsync(carId, parsed);
-            return Ok(new InsuranceValidityResponse(carId, parsed.ToString("yyyy-MM-dd"), valid));
+            var valid = await _service.IsInsuranceValidAsync(carId, parsedDate);
+            return Ok(new InsuranceValidityResponse(carId, parsedDate.ToString("yyyy-MM-dd"), valid));
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException e)
         {
-            return NotFound();
+            return NotFound(e.Message);
         }
     }
 
@@ -52,8 +60,15 @@ public class CarsController(CarService service) : ControllerBase
     [HttpGet("cars/{carId:long}/history")]
     public async Task<ActionResult<List<HistoryDto>>> GetClaimsHistory(long carId)
     {
-        var result = await _service.ListClaimsAsync(carId);
-        if (result.Count == 0) return Ok($"No insurance claims for car {carId}");
-        return Ok(result);
+        try
+        {
+            var result = await _service.ListClaimsAsync(carId);
+            if (result.Count == 0) return NotFound($"No insurance claims for car {carId}");
+            return Ok(result);
+        }
+        catch(KeyNotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
     }
 }

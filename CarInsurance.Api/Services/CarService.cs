@@ -35,13 +35,13 @@ public class CarService(AppDbContext db)
         if (!carExists) throw new KeyNotFoundException($"Car {carId} not found");
 
         var policyId = await _db.Policies
-     .Where(p => p.CarId == carId && p.StartDate <= claimDate && claimDate <= p.EndDate)
-     .Select(p => p.Id)
-     .FirstOrDefaultAsync();
-        if (policyId == 0) throw new KeyNotFoundException($"Not policy available for car {carId}");
+            .Where(p => p.CarId == carId && p.StartDate <= claimDate && claimDate <= p.EndDate)
+            .Select(p => p.Id)
+            .FirstOrDefaultAsync();
+        if (policyId == 0) throw new KeyNotFoundException($"No insurance found for the specified date");
 
 
-        InsuranceClaim insuranceClaim = new InsuranceClaim { CarId = carId, Amount = amount, ClaimDate = claimDate, Description = description, PolicyId = policyId };
+        InsuranceClaim insuranceClaim = new() { CarId = carId, Amount = amount, ClaimDate = claimDate, Description = description, PolicyId = policyId };
 
 
         _db.InsuranceClaims.Add(insuranceClaim);
@@ -54,6 +54,10 @@ public class CarService(AppDbContext db)
 
     public async Task<List<HistoryDto>> ListClaimsAsync(long carId)
     {
+        var carExists = await _db.Cars.AnyAsync(c => c.Id == carId);
+        if (!carExists) throw new KeyNotFoundException($"Car {carId} not found");
+
+
         return await _db.InsuranceClaims
          .Where(c => c.CarId == carId)
          .OrderBy(c => c.ClaimDate)

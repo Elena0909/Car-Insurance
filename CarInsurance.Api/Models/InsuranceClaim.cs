@@ -9,7 +9,7 @@ public class InsuranceClaim
  
     public DateOnly ClaimDate { get; set; }
 
-    public string? Description { get; set; }
+    public required string Description { get; set; }
 
     public double Amount { get; set; }
 
